@@ -1,0 +1,22 @@
+[package]
+name = "dust-mail-server"
+version = "0.1.0"
+rust-version = "1.61"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+directories = "4.0.1"
+rocket = { version = "0.5.0-rc.2", features=["json", "secrets"] }
+sdk = { path = "../../packages/sdk", version = "0.1" }
+toml = "0.7.2"
+
+dashmap = "5.4.0"
+dotenv = "0.15.0"
+base64 = "0.21"
+rand = "0.8.5"
+
+hyper = { version = "0.14.25", features = ["full"] }
+hyper-tls = "0.5.0"
+serde_urlencoded = "0.7.1"
