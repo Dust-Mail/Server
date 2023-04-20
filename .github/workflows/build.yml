@@ -1,0 +1,49 @@
+name: Build server
+
+on:
+  push:
+    paths:
+      - src
+      - .github/workflows/build.yml
+      - Cargo.toml
+      - Cargo.lock
+  pull_request:
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    name: Build server
+
+    steps:
+      - name: Download code
+        uses: actions/checkout@v2
+
+      - name: Setup Cargo cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: 1.65.0
+          override: true
+      
+      - name: Fetch
+        run: cargo fetch --locked
+      
+      - name: Build
+        run: cargo build --release
+      
+      - uses: actions/upload-artifact@v3
+        name: Upload result
+        with:
+          name: dust-mail-server
+          path: target/release/dust-mail-server
+
