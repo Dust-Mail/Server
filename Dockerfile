@@ -1,7 +1,7 @@
 
-ARG RUST_VERSION=1.61
+ARG RUST_VERSION=1.65
 
-FROM rust:${RUST_VERSION}-alpine as builder
+FROM rust:${RUST_VERSION} as builder
 
 WORKDIR /src
 
@@ -9,9 +9,9 @@ COPY . .
 
 RUN cargo fetch --locked
 
-RUN cargo build --package dust-mail-server --release
+RUN cargo build --release
 
-FROM alpine as runner
+FROM rust:${RUST_VERSION} as runner
 
 WORKDIR /app
 
