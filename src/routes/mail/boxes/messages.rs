@@ -1,4 +1,4 @@
-use sdk::types::Preview;
+use dust_mail::types::Preview;
 
 use crate::{
     guards::{RateLimiter, User},
@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[get("/<box_id>/messages?<start>&<end>&<session_token>")]
-pub fn get_messages(
+pub async fn get_messages(
     session_token: String,
     box_id: String,
     start: u32,
@@ -19,10 +19,10 @@ pub fn get_messages(
         .get_incoming(session_token)
         .map_err(|err| ErrResponse::from(err).into())?;
 
-    let mut incoming_session_lock = incoming_session.lock().unwrap();
+    let mut incoming_session_lock = incoming_session.lock().await;
 
-    incoming_session_lock
-        .messages(&box_id, start, end)
-        .map(|previews| OkResponse::new(previews))
-        .map_err(|err| ErrResponse::from(Error::from(err)).into())
+    match incoming_session_lock.messages(&box_id, start, end).await {
+        Ok(previews) => Ok(OkResponse::new(previews)),
+        Err(err) => Err(ErrResponse::from(Error::from(err)).into()),
+    }
 }

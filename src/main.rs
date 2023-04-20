@@ -68,7 +68,7 @@ fn rocket() -> _ {
         config.rate_limit().time_span(),
     );
 
-    let cache_state = cache::ConfigCache::new(config.cache().timeout());
+    let cache_state = cache::ConfigCache::new(*config.cache().timeout());
 
     let mail_sessions_state = state::GlobalUserSessions::new();
 

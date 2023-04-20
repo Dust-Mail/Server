@@ -1,10 +1,9 @@
-use std::{error, fmt};
+use std::{error::Error as StdError, fmt};
 
-use rocket::serde::Serialize;
-use sdk::types::Error as SdkError;
+use dust_mail::types::Error as SdkError;
+use rocket::serde::{ser::SerializeStruct, Serialize};
 
-#[derive(Serialize, Debug)]
-#[serde(crate = "rocket::serde")]
+#[derive(Debug)]
 pub enum ErrorKind {
     SdkError(SdkError),
     CreateHttpRequest,
@@ -17,8 +16,7 @@ pub enum ErrorKind {
     InternalError,
 }
 
-#[derive(Serialize, Debug)]
-#[serde(crate = "rocket::serde")]
+#[derive(Debug)]
 pub struct Error {
     message: String,
     kind: ErrorKind,
@@ -46,8 +44,8 @@ impl Error {
     }
 }
 
-impl error::Error for Error {
-    fn source(&self) -> Option<&(dyn error::Error + 'static)> {
+impl StdError for Error {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self.kind() {
             ErrorKind::SdkError(e) => Some(e),
             _ => None,
@@ -58,5 +56,19 @@ impl error::Error for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.message)
+    }
+}
+
+impl Serialize for Error {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: rocket::serde::Serializer,
+    {
+        let source = self.source().unwrap_or(&self);
+        let mut state = serializer.serialize_struct("Error", 2)?;
+
+        state.serialize_field("message", &source.to_string())?;
+        state.serialize_field("kind", "MailError")?;
+        state.end()
     }
 }

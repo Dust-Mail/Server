@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use dashmap::DashMap;
-use sdk::session::{MailSessions, ThreadSafeIncomingSession};
+use dust_mail::session::{MailSessions, ThreadSafeIncomingSession};
 
 use crate::types::{Error, ErrorKind, Result};
 

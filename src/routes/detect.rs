@@ -4,8 +4,8 @@ use crate::{
     types::{ErrResponse, ErrorKind, OkResponse, ResponseResult},
 };
 
+use dust_mail::detect::{self, Config};
 use rocket::State;
-use sdk::detect::{self, Config};
 
 #[get("/detect/<email>")]
 pub async fn auto_detect_config(

@@ -9,11 +9,11 @@ pub struct CachedItem<T> {
 }
 
 impl<T: Clone> CachedItem<T> {
-    pub fn new(item: &T, cache_timeout: &u64) -> Self {
+    pub fn new(item: &T, cache_timeout: u64) -> Self {
         Self {
             item: item.clone(),
             time: Instant::now(),
-            cache_timeout: Duration::from_secs(*cache_timeout),
+            cache_timeout: Duration::from_secs(cache_timeout),
         }
     }
 

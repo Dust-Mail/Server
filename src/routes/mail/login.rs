@@ -5,8 +5,8 @@ use crate::{
     utils::base64_encode,
 };
 
+use dust_mail::session::{create_sessions, FullLoginOptions};
 use rocket::{serde::json::Json, State};
-use sdk::session::{create_sessions, FullLoginOptions};
 
 #[post("/login", data = "<credentials>")]
 pub async fn login(

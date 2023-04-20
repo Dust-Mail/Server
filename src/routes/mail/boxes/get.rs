@@ -1,4 +1,4 @@
-use sdk::types::MailBox;
+use dust_mail::types::MailBox;
 
 use crate::{
     guards::{RateLimiter, User},
@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[get("/<box_id>?<session_token>")]
-pub fn get_box(
+pub async fn get_box(
     session_token: String,
     box_id: String,
     user: User,
@@ -17,10 +17,11 @@ pub fn get_box(
         .get_incoming(session_token)
         .map_err(|err| ErrResponse::from(err).into())?;
 
-    let mut incoming_session_lock = incoming_session.lock().unwrap();
+    let mut incoming_session_lock = incoming_session.lock().await;
 
     incoming_session_lock
         .get(&box_id)
+        .await
         .map(|mailbox| OkResponse::new(mailbox.clone()))
         .map_err(|err| ErrResponse::from(Error::from(err)).into())
 }

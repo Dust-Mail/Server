@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{types::Result, utils::get_domain_from_email};
 
 use dashmap::DashMap;
-use sdk::detect::Config;
+use dust_mail::detect::Config;
 
 use super::CachedItem;
 
@@ -13,9 +13,9 @@ pub struct ConfigCache {
 }
 
 impl ConfigCache {
-    pub fn new(cache_timeout: &u64) -> Self {
+    pub fn new(cache_timeout: u64) -> Self {
         Self {
-            cache_timeout: cache_timeout.clone(),
+            cache_timeout,
             configs: DashMap::new(),
         }
     }
@@ -23,7 +23,7 @@ impl ConfigCache {
     pub fn set(&self, email: &str, config: &Config) -> Result<()> {
         let domain = get_domain_from_email(email)?;
 
-        let cached_item = Arc::new(CachedItem::new(config, &self.cache_timeout));
+        let cached_item = Arc::new(CachedItem::new(config, self.cache_timeout));
 
         self.configs.insert(String::from(domain), cached_item);
 

@@ -1,4 +1,4 @@
-use sdk::types::Message;
+use dust_mail::types::Message;
 
 use crate::{
     guards::{RateLimiter, User},
@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[get("/<box_id>/<message_id>?<session_token>")]
-pub fn get_message(
+pub async fn get_message(
     session_token: String,
     box_id: String,
     message_id: String,
@@ -18,10 +18,11 @@ pub fn get_message(
         .get_incoming(session_token)
         .map_err(|err| ErrResponse::from(err).into())?;
 
-    let mut incoming_session_lock = incoming_session.lock().unwrap();
+    let mut incoming_session_lock = incoming_session.lock().await;
 
     incoming_session_lock
         .get_message(&box_id, &message_id)
+        .await
         .map(|message| OkResponse::new(message))
         .map_err(|err| ErrResponse::from(Error::from(err)).into())
 }
