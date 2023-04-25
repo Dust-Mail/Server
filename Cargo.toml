@@ -7,16 +7,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-directories = "4.0.1"
+directories = "5.0"
 rocket = { version = "0.5.0-rc.2", features=["json", "secrets"] }
 dust-mail = { git = "https://github.com/Dust-Mail/core", version = "0.1" }
-toml = "0.7.2"
+toml = "0.7"
 
-dashmap = "5.4.0"
-dotenv = "0.15.0"
+dashmap = "5.4"
+dotenv = "0.15"
 base64 = "0.21"
-rand = "0.8.5"
+rand = "0.8"
 
-hyper = { version = "0.14.25", features = ["full"] }
-hyper-tls = "0.5.0"
-serde_urlencoded = "0.7.1"
+reqwest = { version = "0.11", default-features = false, features = ["native-tls"]}

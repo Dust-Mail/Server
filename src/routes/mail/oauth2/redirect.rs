@@ -1,5 +1,10 @@
 use rocket::{
-    serde::{json::Json, Deserialize},
+    http::{Cookie, CookieJar},
+    serde::{
+        json::{to_string as to_json, Json},
+        Deserialize,
+    },
+    time::{Duration, OffsetDateTime},
     State,
 };
 
@@ -7,8 +12,10 @@ use crate::{
     http::HttpClient,
     oauth2::get_access_token,
     state::Config,
-    types::{ErrResponse, ErrorKind, OkResponse, ResponseResult},
+    types::{ErrResponse, Error, ErrorKind, OkResponse, ResponseResult},
 };
+
+pub const OAUTH2_ACCESS_TOKEN_COOKIE_NAME: &str = "oauth2_access_token";
 
 #[derive(Deserialize)]
 #[serde(crate = "rocket::serde", rename_all = "camelCase")]
@@ -41,6 +48,7 @@ pub async fn handle_redirect(
     scope: Option<String>,
     error: Option<String>,
     config: &State<Config>,
+    cookie_jar: &CookieJar<'_>,
     http_client: &State<HttpClient>,
 ) -> ResponseResult<String> {
     if code.is_some() && scope.is_some() {
@@ -58,7 +66,10 @@ pub async fn handle_redirect(
         let token_url = provider.token_url();
         let secret_token = provider.secret_token();
         let public_token = provider.public_token();
-        let code = code.unwrap();
+        let code = match code {
+            Some(code) => code,
+            None => unreachable!(),
+        };
 
         let access_token_response = get_access_token(
             &http_client,
@@ -71,9 +82,27 @@ pub async fn handle_redirect(
         .await
         .map_err(|err| ErrResponse::from(err).into())?;
 
-        println!("{}", access_token_response.access_token());
+        let access_token_json = to_json(&access_token_response)
+            .map_err(|err| ErrResponse::from(Error::from(err)).into())?;
 
-        Ok(OkResponse::new(token_url.to_string()))
+        match state.application_type() {
+            ApplicationType::Web => match cookie_jar.get_private(OAUTH2_ACCESS_TOKEN_COOKIE_NAME) {
+                Some(_cookie) => {}
+                None => {
+                    let cookie = Cookie::build(OAUTH2_ACCESS_TOKEN_COOKIE_NAME, access_token_json)
+                        .http_only(true)
+                        .expires(OffsetDateTime::now_utc().saturating_add(Duration::minutes(5)))
+                        .finish();
+
+                    cookie_jar.add_private(cookie);
+                }
+            },
+            ApplicationType::Desktop => {}
+        };
+
+        Ok(OkResponse::new(String::from(
+            "You can now close this window",
+        )))
     } else if error.is_some() {
         Err(ErrResponse::new(ErrorKind::BadRequest, "yeet"))
     } else {

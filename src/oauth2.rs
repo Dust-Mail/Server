@@ -5,15 +5,15 @@ use crate::{
     types::{Error, ErrorKind, Result},
 };
 
-use hyper::{header::CONTENT_TYPE, Body, Request};
-use rocket::serde::{json::from_slice as parse_json_from_slice, Deserialize};
+use reqwest::{header::CONTENT_TYPE, Method};
+use rocket::serde::{json::from_slice as parse_json_from_slice, Deserialize, Serialize};
 
-#[derive(Deserialize)]
-#[serde(crate = "rocket::serde")]
+#[derive(Deserialize, Serialize)]
+#[serde(crate = "rocket::serde", rename_all = "camelCase")]
 pub struct AccessTokenResponse {
     access_token: String,
     token_type: String,
-    expires_in: u16,
+    expires_in: usize,
     refresh_token: Option<String>,
 }
 
@@ -40,53 +40,55 @@ pub async fn get_access_token<S: AsRef<str>>(
 
     match client_secret.as_ref() {
         Some(client_secret) => {
-            form_data.insert("client_secret", client_secret.as_ref());
+            form_data.insert("client_secret", client_secret);
         }
         None => {}
     }
 
-    let encoded_form_data = serde_urlencoded::to_string(form_data).map_err(|err| {
+    let url: reqwest::Url = token_url.as_ref().parse().map_err(|_| {
         Error::new(
-            ErrorKind::CreateHttpRequest,
-            format!("Failed to create http request for oauth token: {}", err),
+            ErrorKind::Parse,
+            "Failed to parse external oauth2 token url",
         )
     })?;
 
-    let url: hyper::Uri = token_url.as_ref().parse().map_err(|_| {
-        Error::new(
-            ErrorKind::BadConfig,
-            "Failed to parse token url from config",
-        )
-    })?;
-
-    let request = Request::builder()
-        .uri(url)
-        .method("POST")
+    let response = http_client
+        .request(Method::POST, url)
+        .form(&form_data)
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-        .body(Body::from(encoded_form_data))
-        .map_err(|_| {
-            Error::new(
-                ErrorKind::CreateHttpRequest,
-                "Failed to create http request to request oauth token",
-            )
-        })?;
+        .send()
+        .await?;
 
-    let token_response = http_client.request(request).await.map_err(|err| {
-        Error::new(
-            ErrorKind::InternalError,
-            format!("Failed to request oauth access token: {}", err),
-        )
-    })?;
+    let status = response.status();
 
-    // println!("{}", String::from_utf8(token_response.clone()).unwrap());
+    let bytes = response.bytes().await?;
 
-    let access_token_response: AccessTokenResponse = parse_json_from_slice(&token_response)
-        .map_err(|err| {
+    if status.is_success() {
+        let access_token_response: AccessTokenResponse =
+            parse_json_from_slice(&bytes).map_err(|err| {
+                Error::new(
+                    ErrorKind::Parse,
+                    format!("Invalid response when fetching oauth access token: {}", err),
+                )
+            })?;
+
+        Ok(access_token_response)
+    } else {
+        let slice = bytes.as_ref();
+
+        let response = std::str::from_utf8(slice).map_err(|err| {
             Error::new(
                 ErrorKind::Parse,
-                format!("Invalid response when fetching oauth access token: {}", err),
+                format!(
+                    "Failed to parse error response when fetching oauth access token: {}",
+                    err
+                ),
             )
         })?;
 
-    Ok(access_token_response)
+        Err(Error::new(
+            ErrorKind::Oauth2,
+            format!("Failed to fetch oauth2 access token: {}", response),
+        ))
+    }
 }

@@ -72,7 +72,7 @@ fn rocket() -> _ {
 
     let mail_sessions_state = state::GlobalUserSessions::new();
 
-    let http_client = http::HttpClient::new();
+    let http_client = http::HttpClient::new().unwrap();
 
     rocket::custom(figment)
         .register(
@@ -110,6 +110,7 @@ fn rocket() -> _ {
         .mount(
             "/mail/oauth2",
             routes![
+                routes::oauth_user_handler,
                 routes::oauth_get_tokens_handler,
                 routes::oauth_redirect_handler
             ],
