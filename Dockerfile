@@ -20,6 +20,10 @@ COPY --from=builder /src/target/release/dust-mail-server ./bin
 RUN addgroup --gid 1001 rust 
 RUN adduser --uid 1001 --gid 1001 dust-mail 
 
+RUN chown dust-mail /app/bin
+
 USER dust-mail
+
+ENV CONFIG_LOCATION "/config"
 
 CMD ["/app/bin"]
