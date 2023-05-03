@@ -18,6 +18,8 @@ pub fn handle_user(
             let user: AccessTokenResponse = json_from_str(cookie.value())
                 .map_err(|err| ErrResponse::from(Error::from(err)).into())?;
 
+            cookie_jar.remove_private(cookie);
+
             Ok(OkResponse::new(user))
         }
         None => Err(ErrResponse::new(

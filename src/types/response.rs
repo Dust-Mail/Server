@@ -31,6 +31,7 @@ impl ErrResponse {
             ErrorKind::BadConfig => Status::InternalServerError,
             ErrorKind::OutgoingHttpRequest(_) => Status::InternalServerError,
             ErrorKind::SerializeJson(_) => Status::InternalServerError,
+            ErrorKind::ParseString(_) => Status::InternalServerError,
             ErrorKind::Unauthorized => Status::Unauthorized,
             ErrorKind::BadRequest => Status::BadRequest,
             ErrorKind::TooManyRequests => Status::TooManyRequests,

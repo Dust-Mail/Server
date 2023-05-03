@@ -9,7 +9,7 @@ use reqwest::{header::CONTENT_TYPE, Method};
 use rocket::serde::{json::from_slice as parse_json_from_slice, Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-#[serde(crate = "rocket::serde", rename_all = "camelCase")]
+#[serde(crate = "rocket::serde", rename_all = "snake_case")]
 pub struct AccessTokenResponse {
     access_token: String,
     token_type: String,
@@ -68,7 +68,7 @@ pub async fn get_access_token<S: AsRef<str>>(
             parse_json_from_slice(&bytes).map_err(|err| {
                 Error::new(
                     ErrorKind::Parse,
-                    format!("Invalid response when fetching oauth access token: {}", err),
+                    format!("Invalid response when fetching oauth access token: {}", err,),
                 )
             })?;
 
@@ -81,7 +81,7 @@ pub async fn get_access_token<S: AsRef<str>>(
                 ErrorKind::Parse,
                 format!(
                     "Failed to parse error response when fetching oauth access token: {}",
-                    err
+                    err,
                 ),
             )
         })?;

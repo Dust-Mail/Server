@@ -1,4 +1,4 @@
-use std::{error::Error as StdError, fmt};
+use std::{error::Error as StdError, fmt, str::Utf8Error as ParseStringError};
 
 use reqwest::Error as OutgoingRequestError;
 
@@ -12,6 +12,7 @@ pub enum ErrorKind {
     SdkError(SdkError),
     OutgoingHttpRequest(OutgoingRequestError),
     SerializeJson(SerializeJsonError),
+    ParseString(ParseStringError),
     Oauth2,
     BadConfig,
     Unauthorized,
@@ -51,6 +52,15 @@ impl From<SerializeJsonError> for Error {
         Self::new(
             ErrorKind::SerializeJson(serialize_json_error),
             "Failed to serialize json data",
+        )
+    }
+}
+
+impl From<ParseStringError> for Error {
+    fn from(parse_string_error: ParseStringError) -> Self {
+        Self::new(
+            ErrorKind::ParseString(parse_string_error),
+            "Failed to parse string",
         )
     }
 }
