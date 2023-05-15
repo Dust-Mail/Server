@@ -20,7 +20,9 @@ COPY --from=builder /src/target/release/dust-mail-server ./bin
 RUN addgroup --gid 1001 rust 
 RUN adduser --uid 1001 --gid 1001 dust-mail 
 
-RUN chown dust-mail /app/bin
+RUN mkdir -m 755 /config
+
+RUN chown dust-mail /config
 
 USER dust-mail
 
