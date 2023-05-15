@@ -12,6 +12,7 @@ mod utils;
 #[macro_use]
 extern crate rocket;
 
+use fairings::CORS;
 use rocket::{figment::Figment, http::Status, serde::json::Json};
 use types::{ErrResponse, ErrorKind};
 use utils::{generate_random_hex, read_config};
@@ -75,6 +76,7 @@ fn rocket() -> _ {
     let http_client = http::HttpClient::new().unwrap();
 
     rocket::custom(figment)
+        .attach(CORS)
         .register(
             "/",
             catchers![not_found, internal_error, too_many_requests, unauthorized],
@@ -91,6 +93,7 @@ fn rocket() -> _ {
                 routes::settings_handler,
                 routes::version_handler,
                 routes::login_handler,
+                routes::user_handler,
                 routes::logout_handler
             ],
         )

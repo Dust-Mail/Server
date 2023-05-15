@@ -40,31 +40,38 @@ impl GlobalUserSessions {
 
 /// A struct containing all of the users mail sessions.
 pub struct UserSession {
-    session: DashMap<String, Arc<MailSessions>>,
+    sessions: DashMap<String, Arc<MailSessions>>,
 }
 
 impl UserSession {
     pub fn new() -> Self {
         Self {
-            session: DashMap::new(),
+            sessions: DashMap::new(),
         }
     }
 
     pub fn insert<S: AsRef<str>>(&self, session_token: S, mail_sessions: MailSessions) {
-        self.session
+        self.sessions
             .insert(session_token.as_ref().to_string(), Arc::new(mail_sessions));
     }
 
     pub fn remove<S: AsRef<str>>(&self, session_token: S) {
-        self.session.remove(session_token.as_ref());
+        self.sessions.remove(session_token.as_ref());
     }
 
     pub fn count(&self) -> usize {
-        self.session.iter().count()
+        self.sessions.iter().count()
+    }
+
+    pub fn session_tokens(&self) -> Vec<String> {
+        self.sessions
+            .iter()
+            .map(|session| session.key().to_string())
+            .collect()
     }
 
     pub fn get<S: AsRef<str>>(&self, session_token: S) -> Option<Arc<MailSessions>> {
-        self.session
+        self.sessions
             .get(session_token.as_ref())
             .map(|sessions| sessions.clone())
     }
@@ -73,7 +80,7 @@ impl UserSession {
         &self,
         session_token: S,
     ) -> Result<ThreadSafeIncomingSession> {
-        self.session
+        self.sessions
             .get(session_token.as_ref())
             .map(|mail_sessions| mail_sessions.incoming().clone())
             .ok_or_else(|| {

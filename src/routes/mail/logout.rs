@@ -9,8 +9,6 @@ pub async fn logout(
     user: User,
     _rate_limiter: RateLimiter,
 ) -> ResponseResult<String> {
-    user.mail_sessions().remove(&session_token);
-
     let incoming_session = user
         .mail_sessions()
         .get_incoming(&session_token)
@@ -22,6 +20,8 @@ pub async fn logout(
         .logout()
         .await
         .map_err(|err| ErrResponse::from(Error::from(err)).into())?;
+
+    user.mail_sessions().remove(&session_token);
 
     Ok(OkResponse::new(String::from("Logout successfull")))
 }

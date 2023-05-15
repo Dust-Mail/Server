@@ -15,6 +15,13 @@ pub async fn login(
     _rate_limiter: RateLimiter,
     config: &State<Config>,
 ) -> ResponseResult<String> {
+    if config.mail_proxy().is_none() {
+        return Err(ErrResponse::new(
+            ErrorKind::BadRequest,
+            "This Dust-Mail server does not operate as a mail proxy",
+        ));
+    }
+
     let session_token = base64_encode(credentials.0.to_string());
 
     let auth_config = config.authorization().cloned().unwrap_or_default();
