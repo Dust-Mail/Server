@@ -23,72 +23,76 @@ impl AccessTokenResponse {
     }
 }
 
-pub async fn get_access_token<S: AsRef<str>>(
-    http_client: &HttpClient,
-    token_url: S,
-    code: S,
-    redirect_uri: S,
-    client_id: S,
-    client_secret: &Option<String>,
-) -> Result<AccessTokenResponse> {
-    let mut form_data = HashMap::new();
+pub struct OAuth2;
 
-    form_data.insert("grant_type", "authorization_code");
-    form_data.insert("code", code.as_ref());
-    form_data.insert("redirect_uri", redirect_uri.as_ref());
-    form_data.insert("client_id", client_id.as_ref());
+impl OAuth2 {
+    pub async fn get_access_token<T: AsRef<str>, C: AsRef<str>, R: AsRef<str>, I: AsRef<str>>(
+        http_client: &HttpClient,
+        token_url: T,
+        code: C,
+        redirect_uri: R,
+        client_id: I,
+        client_secret: &Option<String>,
+    ) -> Result<AccessTokenResponse> {
+        let mut form_data = HashMap::new();
 
-    match client_secret.as_ref() {
-        Some(client_secret) => {
-            form_data.insert("client_secret", client_secret);
+        form_data.insert("grant_type", "authorization_code");
+        form_data.insert("code", code.as_ref());
+        form_data.insert("redirect_uri", redirect_uri.as_ref());
+        form_data.insert("client_id", client_id.as_ref());
+
+        match client_secret.as_ref() {
+            Some(client_secret) => {
+                form_data.insert("client_secret", client_secret);
+            }
+            None => {}
         }
-        None => {}
-    }
 
-    let url: reqwest::Url = token_url.as_ref().parse().map_err(|_| {
-        Error::new(
-            ErrorKind::Parse,
-            "Failed to parse external oauth2 token url",
-        )
-    })?;
-
-    let response = http_client
-        .request(Method::POST, url)
-        .form(&form_data)
-        .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
-        .send()
-        .await?;
-
-    let status = response.status();
-
-    let bytes = response.bytes().await?;
-
-    if status.is_success() {
-        let access_token_response: AccessTokenResponse =
-            parse_json_from_slice(&bytes).map_err(|err| {
-                Error::new(
-                    ErrorKind::Parse,
-                    format!("Invalid response when fetching oauth access token: {}", err,),
-                )
-            })?;
-
-        Ok(access_token_response)
-    } else {
-        let slice = bytes.as_ref();
-
-        let response = std::str::from_utf8(slice).map_err(|err| {
+        let url: reqwest::Url = token_url.as_ref().parse().map_err(|_| {
             Error::new(
                 ErrorKind::Parse,
-                format!(
-                    "Failed to parse error response when fetching oauth access token: {}",
-                    err,
-                ),
+                "Failed to parse external oauth2 token url",
             )
         })?;
 
-        Err(Error::new(
-            ErrorKind::Oauth2,
-            format!("Failed to fetch oauth2 access token: {}", response),
-        ))
+        let response = http_client
+            .request(Method::POST, url)
+            .form(&form_data)
+            .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .send()
+            .await?;
+
+        let status = response.status();
+
+        let bytes = response.bytes().await?;
+
+        if status.is_success() {
+            let access_token_response: AccessTokenResponse = parse_json_from_slice(&bytes)
+                .map_err(|err| {
+                    Error::new(
+                        ErrorKind::Parse,
+                        format!("Invalid response when fetching oauth access token: {}", err,),
+                    )
+                })?;
+
+            Ok(access_token_response)
+        } else {
+            let slice = bytes.as_ref();
+
+            let response = std::str::from_utf8(slice).map_err(|err| {
+                Error::new(
+                    ErrorKind::Parse,
+                    format!(
+                        "Failed to parse error response when fetching oauth access token: {}",
+                        err,
+                    ),
+                )
+            })?;
+
+            Err(Error::new(
+                ErrorKind::Oauth2,
+                format!("Failed to fetch oauth2 access token: {}", response),
+            ))
+        }
     }
 }

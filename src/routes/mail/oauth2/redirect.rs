@@ -1,3 +1,4 @@
+use reqwest::Url;
 use rocket::{
     http::{Cookie, CookieJar},
     serde::{
@@ -10,9 +11,9 @@ use rocket::{
 
 use crate::{
     http::HttpClient,
-    oauth2::get_access_token,
+    oauth2::OAuth2,
     state::Config,
-    types::{ErrResponse, Error, ErrorKind, OkResponse, ResponseResult},
+    types::{ErrResponse, Error, ErrorKind, OkResponse, ResponseResult, Result},
 };
 
 pub const OAUTH2_ACCESS_TOKEN_COOKIE_NAME: &str = "oauth2_access_token";
@@ -41,6 +42,21 @@ impl OAuthState {
     }
 }
 
+fn create_redirect_uri<U: AsRef<str>>(external_host: U) -> Result<Url> {
+    let base_url = Url::parse(external_host.as_ref()).map_err(|_| {
+        Error::new(
+            ErrorKind::InternalError,
+            "external_host config option is not a valid url",
+        )
+    })?;
+
+    let url = base_url
+        .join("mail/oauth2/redirect")
+        .map_err(|_| Error::new(ErrorKind::InternalError, "Failed to create redirect uri"))?;
+
+    Ok(url)
+}
+
 #[get("/redirect?<code>&<state>&<scope>&<error>")]
 pub async fn handle_redirect(
     code: Option<String>,
@@ -62,7 +78,9 @@ pub async fn handle_redirect(
             }
         };
 
-        let redirect_uri = format!("{}/mail/oauth2/redirect", config.external_host());
+        let redirect_uri = create_redirect_uri(config.external_host())
+            .map_err(|err| ErrResponse::from(err).into())?;
+
         let token_url = provider.token_url();
         let secret_token = provider.secret_token();
         let public_token = provider.public_token();
@@ -71,11 +89,11 @@ pub async fn handle_redirect(
             None => unreachable!(),
         };
 
-        let access_token_response = get_access_token(
+        let access_token_response = OAuth2::get_access_token(
             &http_client,
             token_url,
             code.as_str(),
-            redirect_uri.as_str(),
+            redirect_uri.to_string(),
             public_token,
             secret_token,
         )

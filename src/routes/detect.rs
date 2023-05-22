@@ -1,6 +1,6 @@
 use crate::{
     cache::ConfigCache,
-    guards::{RateLimiter, User},
+    guards::RateLimiter,
     types::{ErrResponse, ErrorKind, OkResponse, ResponseResult},
 };
 
@@ -10,7 +10,6 @@ use rocket::State;
 #[get("/detect/<email>")]
 pub async fn auto_detect_config(
     email: String,
-    _user: User,
     _rate_limiter: RateLimiter,
     cache: &State<ConfigCache>,
 ) -> ResponseResult<Config> {
