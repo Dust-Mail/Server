@@ -77,3 +77,4 @@ jobs:
           upload_url: ${{ needs.create-release.outputs.release_url }} 
           asset_path: ./target/release/dust-mail-server*
           asset_name: dust-mail-${{ matrix.os }}
+          asset_content_type: application/octet-stream
