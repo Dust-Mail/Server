@@ -9,23 +9,25 @@ COPY . .
 
 RUN cargo fetch --locked
 
-RUN cargo build --release
+RUN cargo build  --release
 
-FROM rust:${RUST_VERSION} as runner
+FROM debian:buster-slim as runner
 
-WORKDIR /app
+RUN apt update -y
 
-COPY --from=builder /src/target/release/dust-mail-server ./bin
+RUN apt install libssl-dev -y 
 
-RUN addgroup --gid 1001 rust 
-RUN adduser --uid 1001 --gid 1001 dust-mail 
+COPY --from=builder /src/target/release/dust-mail-server /usr/local/bin
 
-RUN mkdir -m 755 /config
+RUN addgroup --gid 1000 rust 
+RUN adduser --uid 1000 --gid 1000 dust-mail 
 
-RUN chown dust-mail /config
+RUN install -d -m 755 -o dust-mail -g rust /config
 
 USER dust-mail
 
 ENV CONFIG_LOCATION "/config"
 
-CMD ["/app/bin"]
+EXPOSE 8080
+
+CMD ["/usr/local/bin/dust-mail-server"]
