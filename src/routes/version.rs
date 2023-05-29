@@ -1,3 +1,5 @@
+use std::env;
+
 use rocket::serde::Serialize;
 
 use crate::types::{OkResponse, ResponseResult};
@@ -11,9 +13,12 @@ pub struct VersionResponse {
 
 #[get("/version")]
 pub fn version() -> ResponseResult<VersionResponse> {
+    let version = env!("CARGO_PKG_VERSION").to_string();
+    let version_type = env::var("CARGO_VERSION_TYPE").unwrap_or("git".to_string());
+
     let response = VersionResponse {
-        version: "0.2.4".into(),
-        r#type: "git".into(),
+        version,
+        r#type: version_type,
     };
 
     Ok(OkResponse::new(response))
