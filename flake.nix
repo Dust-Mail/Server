@@ -23,6 +23,7 @@
         rustPkgs = pkgs.rustBuilder.makePackageSet {
           rustVersion = "1.75.0";
           packageFun = import ./Cargo.nix;
+          extraRustComponents = [ "rustfmt" ];
         };
 
       in
